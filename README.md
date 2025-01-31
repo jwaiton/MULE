@@ -25,6 +25,15 @@ The functionality of this repository should cover:
 
 Implement description of full usage, perhaps move this section to docs.
 
+The documentation is currently stored in `docs`, and can be accessed in a HTML format like so:
+
+```
+cd docs
+make html
+```
+
+This will create a build directory with html files accessible like a normal website. **This will be changed in the future**
+
 ## Getting Started
 
 EXPLAIN SIMPLEST METHOD FOR INSTALLATION/SETUP
