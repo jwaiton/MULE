@@ -145,18 +145,21 @@ def read_config_file(file_path  :  str) -> dict:
 
 
 @contextmanager
-def writer(path        :  str,
-           group       :  str,
-           overwrite   :  Optional[bool] = True) -> Generator:
+def writer(path: str,
+           group: str,
+           overwrite: Optional[bool] = True,
+           flush_every: int = 100) -> Generator:
+
     '''
     Outer function for a lazy h5 writer that will iteratively write to a dataset, with the formatting:
     FILE.h5 -> GROUP/DATASET
     Includes overwriting functionality, which will overwrite **GROUPS** at will if needed.
     Parameters
     ----------
-    path (str)       :  File path
-    group (str)      :  Group within the h5 file
-    overwrite(bool)  :  Boolean for overwriting previous dataset (OPTIONAL)
+    path        (str)   :  File path
+    group       (str)   :  Group within the h5 file
+    overwrite   (bool)  :  Boolean for overwriting previous dataset (OPTIONAL)
+    
     
     Returns
     -------
@@ -168,19 +171,42 @@ def writer(path        :  str,
     of (True, DF_SIZE, INDEX), otherwise its false.
     '''
 
-
-    # open file if exists, create group or overwrite it
     h5f = h5py.File(path, 'a')
     try:
-        if overwrite:
-            if group in h5f:
-                del h5f[group]
+        if overwrite and group in h5f:
+            del h5f[group]
 
-        gr  = h5f.require_group(group)
+        gr = h5f.require_group(group)
 
-        def write(dataset     :  str,
-                  data        :  np.ndarray,
-                  fixed_size  :  Optional[Union[False, Tuple[True, int, int]]] = False) -> None:
+        # cache datasets and write buffers
+        dataset_cache = {}
+        write_buffers = {}
+
+        def flush_buffers():
+            for dataset, buffer in write_buffers.items():
+                if not buffer:
+                    continue
+                data = np.concatenate(buffer, axis=0)
+                if dataset not in dataset_cache:
+                    maxshape = (None,) + data.shape[1:]
+                    dset = gr.require_dataset(dataset,
+                                              shape=(0,) + data.shape[1:],
+                                              maxshape=maxshape,
+                                              dtype=data.dtype,
+                                              chunks=True)
+                    dataset_cache[dataset] = dset
+                else:
+                    dset = dataset_cache[dataset]
+
+                old_size = dset.shape[0]
+                new_size = old_size + data.shape[0]
+                dset.resize((new_size,))
+                dset[old_size:new_size] = data
+                buffer.clear()
+
+        def write(dataset: str,
+                  data: np.ndarray,
+                  fixed_size: Optional[Union[False, Tuple[True, int, int]]] = False) -> None:
             '''
             Writes ndarray to dataset within group defined in writer().
             Fixed size used to speed up writing, if True will 
@@ -199,39 +225,37 @@ def writer(path        :  str,
                                    This method is best seen in action in `process_bin_WD1()`.
             * Data should be in a numpy structured array format, as can be seen in WD1 and WD2 processing
             '''
+
             if not fixed_size:
-                # create dataset if doesnt exist, if does make larger
-                if dataset in gr:
-                    dset = gr[dataset]
-                    dset.resize((dset.shape[0] + 1,))
-                    dset[-1] = data
-                else:
-                    max_shape = (None,) + data.shape
-                    dset = gr.require_dataset(dataset, shape = (1,),
-                                              maxshape = (None,), dtype = data.dtype,
-                                              chunks = True)
-                    dset[0] = data
+                if dataset not in write_buffers:
+                    write_buffers[dataset] = []
+                write_buffers[dataset].append(data[np.newaxis])  # ensure 2D
+                if len(write_buffers[dataset]) >= flush_every:
+                    flush_buffers()
             else:
                 index = fixed_size[2]
-                # dataset of fixed size
-                if dataset in gr:
-                    dset = gr[dataset]
+                if dataset not in dataset_cache:
+                    dset = gr.require_dataset(dataset,
+                                              shape=(fixed_size[1],) + data.shape,
+                                              maxshape=(fixed_size[1],) + data.shape,
+                                              dtype=data.dtype,
+                                              chunks=True)
+                    dataset_cache[dataset] = dset
                 else:
-                    dset = gr.require_dataset(dataset, shape = (fixed_size[1],) + (),
-                                              maxshape = fixed_size[1], dtype = data.dtype,
-                                              chunks = True)
+                    dset = dataset_cache[dataset]
                 dset[index] = data
 
         yield write
+        flush_buffers()
 
     finally:
         h5f.close()
 
-
-def reader(path         :  str,
-           group        :  str,
-           dataset      :  str,
-           file_access  :  Optional[str] = 'r') -> Generator:
+def reader(path        : str,
+           group       : str,
+           dataset     : str,
+           file_access : Optional[str] = 'r',
+           batch_size  : int = 512) -> Generator:
     '''
     A lazy h5 reader that will iteratively read from a dataset, with the formatting:
     
@@ -248,10 +272,11 @@ def reader(path         :  str,
     -------
     row (generator)  :  Generator object that returns the next row from the dataset upon being called.
     '''
-
     with h5py.File(path, file_access) as h5f:
-        gr = h5f[group]
-        dset = gr[dataset]
+        dset = h5f[group][dataset]
+        n = dset.shape[0]
 
-        for row in dset:
-            yield row
+        for i in range(0, n, batch_size):
+            batch = dset[i:i + batch_size]
+            for row in batch:
+                yield row
