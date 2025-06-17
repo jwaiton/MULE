@@ -248,7 +248,7 @@ def calibrate(file_path     :  str,
                 Q_val = integrate(wf[start_index:end_index])
 
                 # write with correct format
-                info = np.array([(evt_num, channels, Q_val, H_val)], dtype = calibration_info_type)
+                info = np.array((evt_num, channels, Q_val, H_val), dtype = calibration_info_type)
                 swf  = np.array((evt_num, channels, wf), dtype = wf_dtype)
                 scribe('waveform_information', info, (True, num_rows, i))
                 scribe('subwf-1', swf, (True, num_rows, i))
