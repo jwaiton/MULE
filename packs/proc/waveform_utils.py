@@ -223,10 +223,12 @@ def calibrate(file_path     :  str,
     else:
         file = save_path
 
+    # tag for tracking index
+    last_i = 0
     # process
     with writer(file, 'CALI', overwrite = True) as scribe:
         for key in tqdm(keys):
-            for i, waveform in enumerate(reader(file_path, 'rwf', key, 'r+')):
+            for i, waveform in enumerate(reader(file_path, 'rwf', key, 'r+'), start = last_i):
 
                 evt_num  = waveform['event_number']
                 channels = waveform['channels']
@@ -252,3 +254,6 @@ def calibrate(file_path     :  str,
                 swf  = np.array((evt_num, channels, wf), dtype = wf_dtype)
                 scribe('waveform_information', info, (True, num_rows, i))
                 scribe('subwf-1', swf, (True, num_rows, i))
+                
+                # keep track to avoid overwriting
+                last_i += 1
