@@ -1,0 +1,21 @@
+abstract: MULE v.0.1.0
+authors:
+- family-names: John Waiton
+- family-names: Ian Osborne
+- family-names: Mathias Zurbriggen
+- family-names: Brais Palmeiro Pazos
+- affiliation: University of Manchester
+cff-version: 1.2.0
+date-released: '2026-01-29'
+doi: 10.5281/zenodo.18418498
+identifiers:
+- type: swh
+  value: swh:1:dir:bbb659d3bb10a52c5fc0fbe0a886cbf6f366f18d;origin=https://doi.org/10.5281/zenodo.18418497;visit=swh:1:snp:ac85d3e6da64cb37ac4b8e57649d276fa8cb862b;anchor=swh:1:rel:95c3da18742a83b14db4e505a71781b2560bd293;path=nu-ZOO-MULE-b6d7c5a
+license:
+- gpl-3.0-only
+message: If you use this software, please cite it using the metadata from this file.
+repository-code: https://github.com/nu-ZOO/MULE/tree/0.1.0
+title: 'nu-ZOO/MULE: v0.1.0'
+type: software
+version: 0.1.0
+
