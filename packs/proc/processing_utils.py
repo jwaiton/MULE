@@ -194,31 +194,30 @@ def process_header(file_path  :  str,
     # open file
     if not os.path.exists(file_path):
         raise FileNotFoundError(2, 'Path or file not found', file_path)    
-    file = open(file_path, 'rb')
 
-    event_number, timestamp, samples, sampling_period = read_defaults_WD2(file, byte_order)
-    # attempt to read channels
-    channels        = int.from_bytes(file.read(4), byteorder=byte_order)
+    with open(file_path, 'rb') as file: 
 
-    # then read in a full collection of data, and see if the following header makes sense.
-    # if it explicitly breaks, assume 1 channel, raise a warning and continue.
-    try:
-        dataset         = file.read(4*samples*channels)
-        event_number_1, timestamp_1, samples_1, sampling_period_1 = read_defaults_WD2(file, byte_order)
-    except MemoryError as e:
-        warnings.warn("process_header() unable to read file, defaulting to 1-channel description.\nIf this is not what you expect, please ensure your data was collected correctly.")
-        event_number_1 = -1
-        samples_1 = -1
-        sampling_period_1 = -1
+        event_number, timestamp, samples, sampling_period = read_defaults_WD2(file, byte_order)
+        # attempt to read channels
+        channels        = int.from_bytes(file.read(4), byteorder=byte_order)
 
-    # check that event header is as expected
-    if (event_number_1 -1 == event_number) and (samples_1 == samples) and sampling_period_1 == (sampling_period):
-        print(f"{channels} channels detected. Processing accordingly...")
-    else:
-        print(f"Single channel detected. If you're expecting more channels, something has gone wrong.\nProcessing accordingly...")
-        channels = 1
+        # then read in a full collection of data, and see if the following header makes sense.
+        # if it explicitly breaks, assume 1 channel, raise a warning and continue.
+        try:
+            dataset         = file.read(4*samples*channels)
+            event_number_1, timestamp_1, samples_1, sampling_period_1 = read_defaults_WD2(file, byte_order)
+        except MemoryError as e:
+            warnings.warn("process_header() unable to read file, defaulting to 1-channel description.\nIf this is not what you expect, please ensure your data was collected correctly.")
+            event_number_1 = -1
+            samples_1 = -1
+            sampling_period_1 = -1
 
-    file.close()
+        # check that event header is as expected
+        if (event_number_1 -1 == event_number) and (samples_1 == samples) and sampling_period_1 == (sampling_period):
+            print(f"{channels} channels detected. Processing accordingly...")
+        else:
+            print(f"Single channel detected. If you're expecting more channels, something has gone wrong.\nProcessing accordingly...")
+            channels = 1
 
     # this is a check to ensure that if you've screwed up the acquisition, it warns you adequately
     if samples == 0:
