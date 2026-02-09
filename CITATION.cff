@@ -1,9 +1,10 @@
 abstract: MULE v.0.1.0
 authors:
 - family-names: John Waiton
+- family-names: Brais Palmeiro
+- family-names: Matthew Millns
 - family-names: Ian Osborne
 - family-names: Mathias Zurbriggen
-- family-names: Brais Palmeiro Pazos
 - affiliation: University of Manchester
 cff-version: 1.2.0
 date-released: '2026-01-29'

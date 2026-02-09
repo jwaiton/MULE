@@ -73,9 +73,11 @@ In BibTex format:
 ```
 @software{john_waiton_2026_18418498,
   author       = {John Waiton and
+                  Brais Palmeiro and
+                  Matthew Millns
                   Ian Osborne and
-                  Mathias Zurbriggen and
-                  Brais Palmeiro Pazos},
+                  Mathias Zurbriggen
+                  },
   title        = {nu-ZOO/MULE: v0.1.0},
   month        = jan,
   year         = 2026,
