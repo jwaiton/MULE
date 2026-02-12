@@ -32,19 +32,20 @@ def load_evt_info(file_path, merge = False):
 
     (pd.DataFrame)  :  Dataframe of event information
     '''
-
     h5_data = []
     with h5py.File(file_path) as f:
         # extract event info
-        evt_info = f.get('event_information')
-        for i in evt_info.keys():
-            q = evt_info.get(str(i))
-            for j in q:
-                h5_data.append(j)
-
+        if list(f.keys())[0] == 'RAW': # case for unchunked data
+            evt_info = f.get('RAW/event_info')
+            h5_data = evt_info[:]
+        else:
+            evt_info = f.get('event_information') # case for chunked data
+            for i in evt_info.keys():
+                q = evt_info.get(str(i))
+                for j in q:
+                    h5_data.append(j)
 
     return pd.DataFrame(map(list, h5_data), columns = (types.event_info_type).names)
-
 
 def load_rwf_info(file_path  :  str,
                   samples    :  int) -> list:
@@ -65,11 +66,15 @@ def load_rwf_info(file_path  :  str,
     '''
     h5_data = []
     with h5py.File(file_path) as f:
-        rwf_info = f.get('rwf')
-        for i in rwf_info.keys():
-            q = rwf_info.get(str(i))
-            for j in q:
-                h5_data.append(j)
+        if list(f.keys())[0] == 'RAW':
+            rwf_info = f.get('RAW/rwf')
+            h5_data = rwf_info[:]
+        else:
+            rwf_info = f.get('rwf')
+            for i in rwf_info.keys():
+                q = rwf_info.get(str(i))
+                for j in q:
+                    h5_data.append(j)
 
     return pd.DataFrame(map(list, h5_data), columns = (types.rwf_type(samples)).names)
 
