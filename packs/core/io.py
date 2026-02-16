@@ -20,6 +20,9 @@ from packs.types import types
 def load_evt_info(file_path, merge = False):
     '''
     Loads in a processed WD .h5 file as pandas DataFrame, extracting event information tables.
+    This function allows the processed WD .h5 file to be chunked or unchunked.
+    Chunked is the older file format where the h5 structure is of the form /event_information/block$NUM_values.
+    Unchunked is of the form /RAW/event_info without any block$NUM_values.
 
     Parameters
     ----------
@@ -52,6 +55,9 @@ def load_rwf_info(file_path  :  str,
     '''
     Loads in a processed WD .h5 file as pandas dataframe, extracting raw waveform tables.
     Samples must be provided, and can be found using `load_evt_info()`.
+    This function allows the processed WD .h5 file to be chunked or unchunked.
+    Chunked is the older file format where the h5 structure is of the form /rwf/block$NUM_values.
+    Unchunked is of the form /RAW/rwf without any block$NUM_values.
 
     Parameters
     ----------
