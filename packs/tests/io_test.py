@@ -8,9 +8,14 @@ from pytest                        import mark
 from pytest                        import raises
 from pytest                        import warns
 
+from pandas.testing import assert_frame_equal
+
 from packs.core.io import read_config_file
 from packs.core.io import reader
 from packs.core.io import writer
+
+from packs.core.io import load_evt_info
+from packs.core.io import load_rwf_info
 
 def test_missing_config(tmp_path, MULE_dir):
     '''
@@ -242,4 +247,29 @@ def test_writer_check_group_exists_no_overwrite(tmp_path, over_input):
     for data_in, data_out in zip(test_data, reader(file, 'RAW', 'rwf')):
         assert data_in == data_out
 
+def test_load_evt_info_and_rwf_for_chunked_and_unchunked_data(MULE_dir):
+    '''
+    takes a processed chunked h5 and an unchunked h5
+    and checks that the load_evt_info and load_rwf_info
+    return similar dataframes
+    ''' 
+    # load in the files, their evt_info, and rwf
+    unchunked_data = MULE_dir + '/packs/tests/data/unchunked_sample.h5'
+    chunked_data = MULE_dir + '/packs/tests/data/one_channel_WD1.h5'
+    evt_into_unchuk = load_evt_info(unchunked_data)
+    evt_into_chuk = load_evt_info(chunked_data)
+    rwf_unchuk = load_rwf_info(unchunked_data, samples = int(evt_into_unchuk['samples'][0]))
+    rwf_chuk = load_rwf_info(chunked_data, samples = int(evt_into_chuk['samples'][0]))
+
+    #check that the dataframes have same columns
+    assert evt_into_chuk.columns.names == evt_into_unchuk.columns.names
+    assert rwf_chuk.columns.names == rwf_unchuk.columns.names
+    
+    #check that a sample value equals the corresponding length of rwf
+    samples_chuk = evt_into_chuk.head()['samples'][0]
+    samples_unchuk = evt_into_unchuk.head()['samples'][0]
+    assert samples_chuk == len(rwf_chuk.head()['rwf'][0])
+    assert samples_unchuk == len(rwf_unchuk.head()['rwf'][0])
+    assert samples_chuk and samples_unchuk is not None
+    assert samples_chuk and samples_unchuk is not np.nan
 
